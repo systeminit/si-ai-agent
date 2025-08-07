@@ -8,3 +8,4 @@ We contributors:
 
 -----------
 * Adam Jacob (@adamhjk)
+* Ryan Ryke (@rryke)
