@@ -120,6 +120,58 @@ If you are working with AWS IAM components:
 - Use the schema-attributes-documentation tool to understand every field.
 - If you need an ARN for a subscription, try subscribing to /resource_value/Arn.
 
+##### Using AWS Account Component with String Templates for IAM Policies
+
+When creating IAM policies that require dynamic values like AWS Account ID, use the **AWS Account** component with **String Template** components:
+
+**Pattern:**
+1. Create an **AWS Account** component to retrieve account information
+2. Create **String Template** components to build dynamic ARNs or policy documents
+3. Subscribe IAM components to the String Template's rendered output
+
+**Example: GitHub OIDC Trust Policy**
+
+1. Create AWS Account component:
+   ```
+   Component: aws-account-info (AWS Account)
+   Attributes:
+     /secrets/AWS Credential: {$source: {component: "credential-id", path: "/secrets/AWS Credential"}}
+   ```
+
+2. Create String Template for OIDC Provider ARN:
+   ```
+   Component: github-oidc-provider-arn (String Template)
+   Attributes:
+     /domain/Template: "arn:aws:iam::<%= AccountId %>:oidc-provider/token.actions.githubusercontent.com"
+     /domain/Variables/AccountId: {$source: {component: "aws-account-info-id", path: "/domain/AccountData/Account"}}
+   ```
+
+3. Create String Template for trust policy document:
+   ```
+   Component: github-trust-policy (String Template)
+   Attributes:
+     /domain/Template: "{\"Version\": \"2012-10-17\", \"Statement\": [{\"Effect\": \"Allow\", \"Principal\": {\"Federated\": \"<%= OidcProviderArn %>\"}, \"Action\": \"sts:AssumeRoleWithWebIdentity\", \"Condition\": {\"StringLike\": {\"token.actions.githubusercontent.com:sub\": \"repo:orgname/reponame:ref:refs/heads/main\"}}}]}"
+     /domain/Variables/OidcProviderArn: {$source: {component: "github-oidc-provider-arn-id", path: "/domain/Rendered/Value"}}
+   ```
+
+4. Use in IAM Role:
+   ```
+   Component: github-actions-role (AWS::IAM::Role)
+   Attributes:
+     /domain/AssumeRolePolicyDocument: {$source: {component: "github-trust-policy-id", path: "/domain/Rendered/Value"}}
+   ```
+
+**Available AWS Account Attributes:**
+- `/domain/AccountData/Account` - AWS Account ID (12 digits)
+- `/domain/AccountData/Arn` - ARN of the caller identity
+- `/domain/AccountData/UserId` - Unique identifier of the caller
+
+**String Template Usage:**
+- Use `<%= VariableName %>` to insert variable values
+- Access rendered output via `/domain/Rendered/Value`
+- Can nest String Templates (subscribe one template to another's output)
+- Use proper JSON escaping in policy documents
+
 #### AWS IAM Component Creation Guide
 
 When creating and configuring AWS IAM components (roles, users, policies, etc.) for specific use cases, follow these guidelines:
@@ -128,14 +180,20 @@ When creating and configuring AWS IAM components (roles, users, policies, etc.) 
 
 These are the ONLY IAM schemas available in System Initiative:
 - **AWS::IAM::Role** - For service roles and cross-account access
-- **AWS::IAM::User** - For human users or programmatic access  
+- **AWS::IAM::User** - For human users or programmatic access
 - **AWS::IAM::Group** - For grouping users with similar permissions
 - **AWS::IAM::ManagedPolicy** - For reusable permission policies
-- **AWS::IAM::RolePolicy** - For inline policies attached to roles
-- **AWS::IAM::UserPolicy** - For inline policies attached to users
+- **AWS::IAM::RolePolicy** - For attaching managed policies to roles (by ARN)
+- **AWS::IAM::UserPolicy** - For attaching managed policies to users (by ARN)
 - **AWS::IAM::InstanceProfile** - For EC2 instance roles
 
 **IMPORTANT**: These seven schemas are the ONLY IAM-related schemas available. Do not attempt to create or reference any other IAM schemas as they do not exist in this system.
+
+**Key Distinction - AWS::IAM::RolePolicy in System Initiative:**
+- In System Initiative, **AWS::IAM::RolePolicy** is used to **attach existing managed policies** to roles by their ARN
+- This is different from AWS CloudFormation where RolePolicy is for inline policies
+- To attach a managed policy: Create AWS::IAM::RolePolicy with `/domain/PolicyArn` subscribing to the managed policy's `/resource_value/Arn`
+- AWS::IAM::RolePolicy does **NOT** have `/domain/extra/Region` - only `/domain/RoleName`, `/domain/PolicyArn`, and `/secrets/AWS Credential`
 
 **Analyze Requirements**  
    - Based on the use case, determine which IAM components are needed
@@ -181,11 +239,21 @@ These are the ONLY IAM schemas available in System Initiative:
    - Add any required ManagedPolicies with specific permissions
    - Create InstanceProfile if needed for EC2 roles
 
-7. **Configure Relationships**
+7. **Configure Relationships and Attach Policies**
    - Use component-update to set attribute subscriptions
    - Link roles to instance profiles
-   - Attach policies to roles/users/groups
-   - Set up proper ARN references
+   - **To attach a managed policy to a role:**
+     1. Create AWS::IAM::ManagedPolicy with the policy document
+     2. Create AWS::IAM::RolePolicy component
+     3. Set `/domain/RoleName` to subscribe to the role's `/domain/RoleName`
+     4. Set `/domain/PolicyArn` to subscribe to the managed policy's `/resource_value/Arn`
+     5. Set `/secrets/AWS Credential` subscription
+   - Example:
+     ```
+     /domain/RoleName: {$source: {component: "role-id", path: "/domain/RoleName"}}
+     /domain/PolicyArn: {$source: {component: "policy-id", path: "/resource_value/Arn"}}
+     /secrets/AWS Credential: {$source: {component: "credential-id", path: "/secrets/AWS Credential"}}
+     ```
 
 8. **Validate Configuration and Check Qualifications**
    - Review all components for completeness
