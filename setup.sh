@@ -138,8 +138,6 @@ create_claude_settings() {
       "mcp__system-initiative__component-list",
       "mcp__system-initiative__component-get",
       "mcp__system-initiative__component-create",
-      "mcp__system-initiative__component-delete",
-      "mcp__system-initiative__component-erase",
       "mcp__system-initiative__component-update",
       "mcp__system-initiative__component-enqueue-action",
       "mcp__system-initiative__component-discover",
