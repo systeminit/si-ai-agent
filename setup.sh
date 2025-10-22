@@ -119,6 +119,7 @@ create_claude_settings() {
 
     cat > "$settings_file" << EOF
 {
+  "max_output_tokens": "80000",
   "enabledMcpjsonServers": [
     "system-initiative"
   ],
