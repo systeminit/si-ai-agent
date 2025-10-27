@@ -120,11 +120,24 @@ If you are working with AWS IAM components:
 - Use the schema-attributes-documentation tool to understand every field.
 - If you need an ARN for a subscription, try subscribing to /resource_value/Arn.
 
+##### 🔍 Schema Search Case Sensitivity
+
+When checking for available AWS schemas (for example, `AWS::VpcLattice::Service`), **System Initiative’s schema search is case-sensitive**.  
+If a search for a schema name returns no results, try alternate casing variations, such as:
+
+- `AWS::VpcLattice::Service`
+- `AWS::VPCLattice::Service`
+- `AWS::VPCLATTICE::Service`
+
+Searching across multiple case variations ensures accurate discovery of AWS CloudFormation resources.  
+For best results, always include all plausible casing patterns when verifying schema availability.
+
 ##### Using AWS Account Component with String Templates for IAM Policies
 
 When creating IAM policies that require dynamic values like AWS Account ID, use the **AWS Account** component with **String Template** components:
 
 **Pattern:**
+
 1. Create an **AWS Account** component to retrieve account information
 2. Create **String Template** components to build dynamic ARNs or policy documents
 3. Subscribe IAM components to the String Template's rendered output
