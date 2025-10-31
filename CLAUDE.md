@@ -102,6 +102,298 @@ When setting array attributes, the schema uses specific patterns:
 /secrets/Hetzner Api Token: {$source: {component: "credential-id", path: "/secrets/Hetzner::Credential::ApiToken"}}
 ```
 
+#### Azure Components
+
+System Initiative supports Microsoft Azure infrastructure management using Azure Resource Manager (ARM) resource types.
+
+##### Available Azure Schemas
+
+**Foundation Components:**
+- **Azure Credential** - Authentication credentials for Azure
+- **Azure Location** - Azure region specification (e.g., "eastus", "westus2")
+- **Azure Subscription** - Azure subscription ID reference
+
+**Core Infrastructure:**
+- **Azure Resource Group** - Container for related Azure resources (required for most resources)
+
+**Compute:**
+- **Microsoft.Compute/virtualMachines** - Virtual machines
+- **Microsoft.Compute/virtualMachineScaleSets** - VM scale sets for auto-scaling
+
+**Networking:**
+- **Microsoft.Network/virtualNetworks** - Virtual networks with subnets
+- **Microsoft.Network/networkInterfaces** - Network interface cards
+- **Microsoft.Network/networkSecurityGroups** - Network security groups (firewall rules)
+- **Microsoft.Network/publicIPAddresses** - Public IP addresses
+- **Microsoft.Network/loadBalancers** - Load balancers for traffic distribution
+- **Microsoft.Network/applicationGateways** - Application Gateway with WAF capabilities
+- **Microsoft.Network/natGateways** - NAT gateways for outbound connectivity
+- **Microsoft.Network/virtualNetworks/virtualNetworkPeerings** - VNet peering connections
+
+**Storage:**
+- **Microsoft.Storage/storageAccounts** - Storage accounts for blobs, files, queues, tables
+
+**Containers:**
+- **Microsoft.ContainerService/managedClusters** - Azure Kubernetes Service (AKS)
+- **Microsoft.ContainerRegistry/registries** - Container registries
+
+**Identity & Security:**
+- **Microsoft.ManagedIdentity/userAssignedIdentities** - User-assigned managed identities
+- **Microsoft.KeyVault/vaults** - Key vaults for secrets management
+
+**Monitoring:**
+- **Microsoft.Insights/components** - Application Insights
+
+**Web & Functions:**
+- **Microsoft.Web/serverfarms** - App Service plans
+- **Microsoft.Web/sites** - Web apps and Function apps
+
+##### Creating Azure Components
+
+**Important Schema Naming:**
+- Schema names use the **Microsoft ARM resource type format** (e.g., `Microsoft.Network/loadBalancers`)
+- This differs from AWS (AWS::Service::Resource) and Hetzner (Hetzner::Cloud::Resources)
+
+**Required Foundation Components:**
+
+Before creating Azure resources, you need:
+1. **Azure Credential** component for authentication
+2. **Azure Location** component for the region
+3. **Azure Subscription** component with subscription ID
+4. **Azure Resource Group** component as a container
+
+**Standard Attribute Pattern:**
+
+Every Azure resource requires these subscriptions:
+```
+/domain/name: "resource-name"
+/domain/subscriptionId: {$source: {component: "subscription-id", path: "/domain/SubscriptionId"}}
+/domain/location: {$source: {component: "location-id", path: "/domain/location"}}
+/domain/resourceGroup: {$source: {component: "rg-id", path: "/domain/Name"}}
+/secrets/Azure Credential: {$source: {component: "credential-id", path: "/secrets/Azure Credential"}}
+```
+
+**If multiple Azure Credential or Azure Location components are present, you should ask the user which they want to use.**
+
+**Array Attribute Paths:**
+When setting array attributes in Azure resources:
+- Use zero-indexed paths: `/domain/properties/subnets/0/name`
+- Each array element needs its own index
+- Nested arrays follow the same pattern: `/domain/properties/securityRules/0/properties/sourceAddressPrefixes/0`
+
+##### Using Azure ID Template for Azure Resource IDs
+
+Azure resources often require full resource IDs for references. Use **Azure ID Template** components (NOT generic String Templates) to build these dynamically:
+
+**Azure ID Template Attributes:**
+- `/domain/Template` - The full Azure resource ID pattern (optional, you can let it auto-generate from the variables)
+- `/domain/Variables/subId` - Subscription ID (required) - subscribe to Azure Subscription component
+- `/domain/Variables/group` - Resource group name (required) - subscribe to Resource Group component
+- `/domain/Variables/type` - Azure resource type like `Microsoft.Network/loadBalancers` (required)
+- `/domain/Variables/resourceSubPath` - Path to sub-resource like `vnet1/subnets` (optional)
+- `/domain/Variables/value` - The resource name (required)
+- `/domain/Rendered/Value` - The final rendered ID (DO NOT SET - this is the output you subscribe to)
+
+**Pattern for simple resource IDs:**
+```
+Component: lb-backend-pool-id (Azure ID Template)
+Attributes:
+  /domain/Variables/subId: {$source: {component: "subscription-id", path: "/domain/SubscriptionId"}}
+  /domain/Variables/group: {$source: {component: "rg-id", path: "/domain/Name"}}
+  /domain/Variables/type: "Microsoft.Network/loadBalancers"
+  /domain/Variables/resourceSubPath: {$source: {component: "lb-id", path: "/domain/name"}} + "/backendAddressPools"
+  /domain/Variables/value: {$source: {component: "lb-id", path: "/domain/properties/backendAddressPools/0/name"}}
+```
+
+**Pattern for nested sub-resources (e.g., subnet within VNet):**
+```
+Component: subnet-id (Azure ID Template)
+Attributes:
+  /domain/Variables/subId: {$source: {component: "subscription-id", path: "/domain/SubscriptionId"}}
+  /domain/Variables/group: {$source: {component: "rg-id", path: "/domain/Name"}}
+  /domain/Variables/type: "Microsoft.Network/virtualNetworks"
+  /domain/Variables/resourceSubPath: "vnet1/subnets"
+  /domain/Variables/value: "my-subnet"
+```
+
+**Or specify the full template explicitly:**
+```
+Component: resource-id (Azure ID Template)
+Attributes:
+  /domain/Template: "/subscriptions/MySubscriptionId/resourceGroups/MyResourceGroup/providers/Microsoft.Network/virtualNetworks/vnet1/subnets/Subnet"
+  /domain/Variables/subId: {$source: {component: "subscription-id", path: "/domain/SubscriptionId"}}
+  /domain/Variables/group: {$source: {component: "rg-id", path: "/domain/Name"}}
+  /domain/Variables/type: "Microsoft.Network/virtualNetworks"
+  /domain/Variables/value: "Subnet"
+```
+
+**Access the rendered output by subscribing to:**
+```
+/domain/Rendered/Value
+```
+
+##### Common Azure Resource Examples
+
+**Example: Creating a Virtual Network**
+```
+Component: my-vnet (Microsoft.Network/virtualNetworks)
+Attributes:
+  /domain/name: "my-vnet"
+  /domain/subscriptionId: {$source: {component: "subscription-id", path: "/domain/SubscriptionId"}}
+  /domain/location: {$source: {component: "location-id", path: "/domain/location"}}
+  /domain/resourceGroup: {$source: {component: "rg-id", path: "/domain/Name"}}
+  /domain/properties/addressSpace/addressPrefixes/0: "10.0.0.0/16"
+  /domain/properties/subnets/0/name: "default"
+  /domain/properties/subnets/0/properties/addressPrefix: "10.0.0.0/24"
+  /secrets/Azure Credential: {$source: {component: "credential-id", path: "/secrets/Azure Credential"}}
+```
+
+**Example: Creating a Network Security Group**
+```
+Component: my-nsg (Microsoft.Network/networkSecurityGroups)
+Attributes:
+  /domain/name: "my-nsg"
+  /domain/subscriptionId: {$source: {component: "subscription-id", path: "/domain/SubscriptionId"}}
+  /domain/location: {$source: {component: "location-id", path: "/domain/location"}}
+  /domain/resourceGroup: {$source: {component: "rg-id", path: "/domain/Name"}}
+  /domain/properties/securityRules/0/name: "AllowHTTP"
+  /domain/properties/securityRules/0/properties/protocol: "*"
+  /domain/properties/securityRules/0/properties/sourcePortRange: "*"
+  /domain/properties/securityRules/0/properties/destinationPortRange: "80"
+  /domain/properties/securityRules/0/properties/sourceAddressPrefix: "Internet"
+  /domain/properties/securityRules/0/properties/destinationAddressPrefix: "*"
+  /domain/properties/securityRules/0/properties/access: "Allow"
+  /domain/properties/securityRules/0/properties/priority: 100
+  /domain/properties/securityRules/0/properties/direction: "Inbound"
+  /secrets/Azure Credential: {$source: {component: "credential-id", path: "/secrets/Azure Credential"}}
+```
+
+**Example: Creating a Virtual Machine**
+```
+Component: my-vm (Microsoft.Compute/virtualMachines)
+Attributes:
+  /domain/name: "my-vm"
+  /domain/subscriptionId: {$source: {component: "subscription-id", path: "/domain/SubscriptionId"}}
+  /domain/location: {$source: {component: "location-id", path: "/domain/location"}}
+  /domain/resourceGroup: {$source: {component: "rg-id", path: "/domain/Name"}}
+  /domain/properties/hardwareProfile/vmSize: "Standard_B2s"
+  /domain/properties/storageProfile/imageReference/publisher: "Canonical"
+  /domain/properties/storageProfile/imageReference/offer: "0001-com-ubuntu-server-jammy"
+  /domain/properties/storageProfile/imageReference/sku: "22_04-lts-gen2"
+  /domain/properties/storageProfile/imageReference/version: "latest"
+  /domain/properties/storageProfile/osDisk/createOption: "FromImage"
+  /domain/properties/storageProfile/osDisk/managedDisk/storageAccountType: "Standard_LRS"
+  /domain/properties/osProfile/computerName: "my-vm"
+  /domain/properties/osProfile/adminUsername: "azureuser"
+  /domain/properties/osProfile/adminPassword: "P@ssw0rd1234!"
+  /domain/properties/osProfile/linuxConfiguration/disablePasswordAuthentication: false
+  /domain/properties/networkProfile/networkInterfaces/0/id: {$source: {component: "nic-id", path: "/resource_value/id"}}
+  /secrets/Azure Credential: {$source: {component: "credential-id", path: "/secrets/Azure Credential"}}
+```
+
+**Example: Creating a Load Balancer with Azure ID Templates**
+```
+# 1. Create Azure ID Templates for Load Balancer sub-resources
+Component: lb-frontend-ip-id (Azure ID Template)
+Attributes:
+  /domain/Variables/subId: {$source: {component: "subscription-id", path: "/domain/SubscriptionId"}}
+  /domain/Variables/group: {$source: {component: "rg-id", path: "/domain/Name"}}
+  /domain/Variables/type: "Microsoft.Network/loadBalancers"
+  /domain/Variables/resourceSubPath: "my-lb/frontendIPConfigurations"
+  /domain/Variables/value: "LoadBalancerFrontEnd"
+
+Component: lb-backend-pool-id (Azure ID Template)
+Attributes:
+  /domain/Variables/subId: {$source: {component: "subscription-id", path: "/domain/SubscriptionId"}}
+  /domain/Variables/group: {$source: {component: "rg-id", path: "/domain/Name"}}
+  /domain/Variables/type: "Microsoft.Network/loadBalancers"
+  /domain/Variables/resourceSubPath: "my-lb/backendAddressPools"
+  /domain/Variables/value: "BackendPool"
+
+Component: lb-probe-id (Azure ID Template)
+Attributes:
+  /domain/Variables/subId: {$source: {component: "subscription-id", path: "/domain/SubscriptionId"}}
+  /domain/Variables/group: {$source: {component: "rg-id", path: "/domain/Name"}}
+  /domain/Variables/type: "Microsoft.Network/loadBalancers"
+  /domain/Variables/resourceSubPath: "my-lb/probes"
+  /domain/Variables/value: "HealthProbe"
+
+# 2. Create Load Balancer
+Component: my-lb (Microsoft.Network/loadBalancers)
+Attributes:
+  /domain/name: "my-lb"
+  /domain/subscriptionId: {$source: {component: "subscription-id", path: "/domain/SubscriptionId"}}
+  /domain/location: {$source: {component: "location-id", path: "/domain/location"}}
+  /domain/resourceGroup: {$source: {component: "rg-id", path: "/domain/Name"}}
+  /domain/sku/name: "Standard"
+  /domain/sku/tier: "Regional"
+  /domain/properties/frontendIPConfigurations/0/name: "LoadBalancerFrontEnd"
+  /domain/properties/frontendIPConfigurations/0/id: {$source: {component: "lb-frontend-ip-id", path: "/domain/Rendered/Value"}}
+  /domain/properties/frontendIPConfigurations/0/properties/publicIPAddress/id: {$source: {component: "public-ip-id", path: "/resource_value/id"}}
+  /domain/properties/backendAddressPools/0/name: "BackendPool"
+  /domain/properties/backendAddressPools/0/id: {$source: {component: "lb-backend-pool-id", path: "/domain/Rendered/Value"}}
+  /domain/properties/probes/0/name: "HealthProbe"
+  /domain/properties/probes/0/id: {$source: {component: "lb-probe-id", path: "/domain/Rendered/Value"}}
+  /domain/properties/probes/0/properties/protocol: "Tcp"
+  /domain/properties/probes/0/properties/port: 80
+  /domain/properties/probes/0/properties/intervalInSeconds: 5
+  /domain/properties/probes/0/properties/numberOfProbes: 2
+  /secrets/Azure Credential: {$source: {component: "credential-id", path: "/secrets/Azure Credential"}}
+```
+
+##### Azure Resource Actions
+
+Most Azure resources support these actions:
+- **Create Asset** - Create the resource in Azure
+- **Update Asset** - Update existing resource
+- **Refresh Asset** - Sync state from Azure
+- **Delete Asset** - Remove the resource from Azure
+
+And these management functions:
+- **Import from Azure** - Import an existing resource by ID
+- **Discover on Azure** - Discover all resources of this type
+
+##### Azure Resource ID Format
+
+Azure resource IDs follow this predictable pattern:
+```
+/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/{resourceType}/{resourceName}
+```
+
+For nested resources (like subnets within a VNet):
+```
+/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/virtualNetworks/{vnetName}/subnets/{subnetName}
+```
+
+Use String Templates to build these IDs dynamically and subscribe other resources to the rendered output.
+
+##### Key Differences from AWS and Hetzner
+
+**vs AWS:**
+- Uses ARM resource types instead of CloudFormation types
+- Requires explicit Resource Group for most resources
+- Uses Subscription ID instead of AWS Account ID
+- Simpler resource ID format (no ARNs)
+- Location is just region name (e.g., "eastus") not complex identifier
+
+**vs Hetzner:**
+- More complex nested resource structures
+- Requires Resource Group as parent container
+- Uses `properties` object for most configuration
+- Has dedicated **Azure ID Template** component for resource ID references
+- Schema names follow Microsoft.Service/resourceType pattern
+
+##### Planning Azure Infrastructure
+
+Before creating Azure components:
+1. Create foundation components (Credential, Location, Subscription)
+2. Create Resource Group(s) to organize resources
+3. Plan network topology (VNet, subnets, NSGs)
+4. Create network resources before compute resources
+5. Use **Azure ID Template** components for complex resource ID references
+6. Check qualifications after each component creation
+7. Apply change set and monitor actions for deployment status
+
 #### AWS Components
 
 System Initiative uses the CloudFormation schema through the Cloud Control service. 
