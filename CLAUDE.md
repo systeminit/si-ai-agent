@@ -102,6 +102,66 @@ When setting array attributes, the schema uses specific patterns:
 /secrets/Hetzner Api Token: {$source: {component: "credential-id", path: "/secrets/Hetzner::Credential::ApiToken"}}
 ```
 
+#### DigitalOcean Components
+
+System Initiative supports DigitalOcean infrastructure management through dedicated schemas.
+
+##### Available DigitalOcean Schemas
+
+**Credential:**
+- **DigitalOcean Credential** - API token for authenticating with DigitalOcean
+
+**Core Infrastructure:**
+- **DigitalOcean Droplet** - Virtual machines
+- **DigitalOcean Volume** - Block storage for Droplets
+- **DigitalOcean Volume Snapshot** - Snapshots of block storage volumes
+- **DigitalOcean VPC** - Virtual Private Cloud for private networking
+- **DigitalOcean Firewall** - Network access control for Droplets
+- **DigitalOcean Load Balancer** - Load balancers for traffic distribution
+- **DigitalOcean SSH Key** - SSH public keys for Droplet authentication
+
+**IP Management:**
+- **DigitalOcean Floating IP** - Globally assignable IPs (legacy)
+- **DigitalOcean Reserved IP** - Reserved IPs for assignment to resources
+
+**Compute & Applications:**
+- **DigitalOcean App Platform** - Platform-as-a-Service for application deployment
+- **DigitalOcean Kubernetes Cluster** - Managed Kubernetes clusters
+- **DigitalOcean Database Cluster** - Managed database clusters (PostgreSQL, MySQL, Redis, MongoDB, Kafka, OpenSearch, Valkey)
+
+**Storage & Content Delivery:**
+- **DigitalOcean Container Registry** - Docker container image registry
+- **DigitalOcean Custom Image** - Custom VM images
+
+**DNS & Certificates:**
+- **DigitalOcean Domain** - DNS domain management
+
+**Management & Organization:**
+- **DigitalOcean Project** - Project organization for resources
+- **DigitalOcean Tag** - Labels for resource organization
+- **DigitalOcean Monitoring Alert Policy** - Monitoring and alerting policies
+
+##### Creating DigitalOcean Components
+
+**Important Naming Convention:**
+- Schema names have spaces between words, not colons, slashes, or hyphens.
+
+**Credential Requirements:**
+When creating DigitalOcean components, always set:
+- `/secrets/DigitalOcean Credential`: should subscribe to a DigitalOcean Credential component's `/secrets/DigitalOcean Credential`
+
+##### DigitalOcean Resource Actions
+
+Most DigitalOcean resources support these actions:
+- **Create Asset** - Create the resource in DigitalOcean
+- **Update Asset** - Update existing resource
+- **Refresh Asset** - Sync state from DigitalOcean
+- **Delete Asset** - Remove the resource from DigitalOcean
+
+And these management functions:
+- **Import from DigitalOcean** - Import an existing resource by ID
+- **Discover on DigitalOcean** - Discover all resources of this type
+
 #### Microsoft Azure Components
 
 System Initiative supports Microsoft Azure infrastructure management using Azure Resource Manager (ARM) resource types.
