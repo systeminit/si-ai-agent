@@ -1,5 +1,24 @@
 # System Initiative AI Agent
 
+**PLEASE NOTE**: This is no longer the recommended way of running the System Initiative AI Agent. You can now use the SI binary to do this. You can install the SI binary as follows:
+
+```
+## Linux / macOS
+curl -fsSL https://auth.systeminit.com/install.sh | sh
+
+## Windows
+irm https://auth.systeminit.com/install.ps1 | iex
+```
+
+To get started:
+
+```
+si ai-agent init
+si ai-agent start
+```
+
+---
+
 [![Discord Server](https://img.shields.io/badge/discord-gray?style=for-the-badge&logo=discord&logoColor=white)](https://discord.com/invite/system-init)
 
 This is a repository containing a pre-configured integration between [System Initiative](https://systeminit.com) and [Claude Code](https://www.anthropic.com/claude-code). You will be up and running in under a minute using a single setup script.
@@ -84,12 +103,11 @@ Instead of using an Anthropic account to access Claude, you can use the same mod
 
 You will have to make sure you have enabled the Anthropic Claude model in your AWS Account's [Bedrock Console Model Catalog](https://console.aws.amazon.com/bedrock/home?region=us-west-2#/model-catalog) and that your AWS IAM role has permission to run the model from Bedrock.
 
-The startup is the same as described in the Quick Start above, but before you run setup or more importantly `claude``, you should  set the following environment variables in the shell that you are going to run claude.
+The startup is the same as described in the Quick Start above, but before you run setup or more importantly `claude``, you should set the following environment variables in the shell that you are going to run claude.
 
-You can lookup the id for different bedrock ANTHROPIC_MODEL IDs by going the the AWS Bedrock Console and click on [Cross-region inference](https://console.aws.amazon.com/bedrock/home?region=us-west-2#/inference-profiles
-) under `Infer` in the left Navbar of the Amazon Bedrock console page. Note that it must start with `us.` or `global.` to be an Inference profile.
+You can lookup the id for different bedrock ANTHROPIC_MODEL IDs by going the the AWS Bedrock Console and click on [Cross-region inference](https://console.aws.amazon.com/bedrock/home?region=us-west-2#/inference-profiles) under `Infer` in the left Navbar of the Amazon Bedrock console page. Note that it must start with `us.` or `global.` to be an Inference profile.
 
-``` bash
+```bash
 export CLAUDE_CODE_USE_BEDROCK=1
 export AWS_REGION=<aws region you are using>
 export ANTHROPIC_MODEL=us.anthropic.claude-sonnet-4-5-20250929-v1:0
@@ -103,7 +121,7 @@ Then run `claude` as described in the quickstart.
 If you are using AWS SSO, you should sso in before you run `claude`.
 You will also need to get the temporary credentials generated for the SSO session and copy them into your credentials setup in System Initiative.
 
-``` bash
+```bash
 aws sso login
 aws configure export-credentials --profile <the aws profile from ~/.aws/config>
 ```
