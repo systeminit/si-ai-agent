@@ -1,16 +1,27 @@
 # System Initiative AI Agent
 
-**PLEASE NOTE**: This is no longer the recommended way of running the System Initiative AI Agent. You can now use the SI binary to do this. You can install the SI binary as follows:
+[![Discord Server](https://img.shields.io/badge/discord-gray?style=for-the-badge&logo=discord&logoColor=white)](https://discord.com/invite/system-init)
 
-```
-## Linux / macOS
+## NOTICE - NEW METHOD
+
+The original method to run the AI agent is no longer the recommended way of running the System Initiative AI Agent.
+You should now use the [`si`](https://github.com/systeminit/si/tree/main/bin/si) binary to do this, which can be installed through one of the following methods based on your platform.
+
+### Installing on Linux and macOS
+
+```bash
 curl -fsSL https://auth.systeminit.com/install.sh | sh
+```
 
-## Windows
+### Installing on Windows
+
+```shell
 irm https://auth.systeminit.com/install.ps1 | iex
 ```
 
-To get started:
+### Starting the AI Agent
+
+Now that `si` is installed, you can start the agent.
 
 ```
 si ai-agent init
@@ -19,7 +30,7 @@ si ai-agent start
 
 ---
 
-[![Discord Server](https://img.shields.io/badge/discord-gray?style=for-the-badge&logo=discord&logoColor=white)](https://discord.com/invite/system-init)
+## ORIGINAL METHOD
 
 This is a repository containing a pre-configured integration between [System Initiative](https://systeminit.com) and [Claude Code](https://www.anthropic.com/claude-code). You will be up and running in under a minute using a single setup script.
 
@@ -30,7 +41,7 @@ This is a repository containing a pre-configured integration between [System Ini
 3. Install [Claude Code](https://www.anthropic.com/claude-code)
 4. Clone the repo and run `./setup.sh`.
 
-## Prerequisites
+### Prerequisites
 
 - **Docker** installed and running (macOS, Linux, or Windows via WSL2)
 - **Claude Code** installed and running
@@ -39,9 +50,7 @@ This is a repository containing a pre-configured integration between [System Ini
 
 > If you’re on Windows, please run the commands inside **WSL2** (Ubuntu recommended).
 
----
-
-## Quick start
+### Quick start
 
 ```bash
 # 1) Clone
@@ -57,17 +66,13 @@ cd si-ai-agent
 
 The script will take care of building and running the Dockerized MCP server. If you exported `SI_WORKSPACE_TOKEN`, the script will pick it up automatically; otherwise you’ll be prompted to paste it.
 
----
-
-## Configuration
+### Configuration
 
 - **`SI_WORKSPACE_TOKEN`** – Your workspace token. You can export it before running, or paste it interactively when `setup.sh` asks.
 
 > **Tip:** The `.mcp.json` is included in the `.gitignore` to avoid committing any tokens to source control. If you place tokens in a local environment file or shell profile, ensure that file is ignored by git too.
 
----
-
-## Multiple agents (one per workspace)
+### Multiple agents (one per workspace)
 
 Each running **si-ai-agent** connects to **exactly one** System Initiative workspace (1:1).
 
@@ -89,15 +94,11 @@ export SI_WORKSPACE_TOKEN=siu_...B...
 ./setup.sh
 ```
 
----
-
-## Update / Reinstall
+### Update / Reinstall
 
 Our `.mcp.json` will pull the latest container on startup each time. No need to re-run `./setup.sh`.
 
----
-
-## Use Claude from AWS Bedrock
+### Use Claude from AWS Bedrock
 
 Instead of using an Anthropic account to access Claude, you can use the same model but from your AWS Account's Bedrock Anthropic models. This allows you to pay for it as part of your AWS bill.
 
@@ -116,7 +117,7 @@ export AWS_PROFILE=<your aws profile from ~/.aws/config>
 
 Then run `claude` as described in the quickstart.
 
-### Working with AWS SSO
+#### Working with AWS SSO
 
 If you are using AWS SSO, you should sso in before you run `claude`.
 You will also need to get the temporary credentials generated for the SSO session and copy them into your credentials setup in System Initiative.
@@ -128,16 +129,12 @@ aws configure export-credentials --profile <the aws profile from ~/.aws/config>
 
 The output of the last command will show you the temporary Key ID, Secret Key and Session token that you can then copy into the System Initiative MyCredentials configuration.
 
----
-
-## Need help?
+### Need help?
 
 - **Discord:** Join our community for quick questions and help. _(Click the Discord button at the top of this README)_
 - **Email:** [support@systeminit.com](mailto:support@systeminit.com)
 
----
-
-## Contributing
+### Contributing
 
 We love contributions—ideas, docs, bug reports, and code! If you’ve got feedback or fixes, you’re in the right place.
 
@@ -156,22 +153,16 @@ We love contributions—ideas, docs, bug reports, and code! If you’ve got feed
 
 Not sure where something belongs? Open an issue in this repo and we’ll help route it.
 
----
-
-## Security
+### Security
 
 - Treat your **workspace token** like a secret. Do not commit it, paste it in issues, or share it.
 - If you suspect compromise, rotate the token in System Initiative and re-run `./setup.sh` with the new token.
 
----
-
-## License
+### License
 
 See **LICENSE** in this repository.
 
----
-
-## FAQ
+### FAQ
 
 **Q:** **Does the script support non-interactive installs?**
 **A:** Yes—export `SI_WORKSPACE_TOKEN` before running `./setup.sh`.
@@ -182,7 +173,7 @@ See **LICENSE** in this repository.
 **Q:** **Which OSes are supported?**
 **A:** macOS, Linux, and Windows via WSL2.
 
-## Troubleshooting
+### Troubleshooting
 
 **`permission denied: ./setup.sh`**
 
